@@ -1,7 +1,5 @@
 # acme.cr
 
-[![Crystal shard](https://img.shields.io/badge/shard-acme-black.svg)](https://github.com/watzon/acme.cr)
-[![Crystal](https://img.shields.io/badge/Crystal-1.0+-black?logo=crystal&labelColor=white)](https://crystal-lang.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/release/watzon/acme.cr.svg)](https://github.com/watzon/acme.cr/releases)
 
