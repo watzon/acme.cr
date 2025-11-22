@@ -45,10 +45,6 @@ module Acme
     end
 
     private def register_account
-      # We try to register. If it fails because it already exists, that's fine.
-      # The client handles the 409 conflict internally if we implemented it that way,
-      # or we can catch it here.
-      # Looking at Client#register, it handles 409 gracefully.
       @client.register(@email)
     end
 
@@ -59,13 +55,6 @@ module Acme
         if challenge
           token = challenge["token"].as_s
           url = challenge["url"].as_s
-
-          # Calculate key authorization
-          key_auth = "#{token}.#{@client.kid || @account_key.not_nil!.thumbprint}"
-          # Note: Client#kid might be nil if we haven't registered properly, but we did.
-          # Actually, thumbprint is on the key.
-          # Let's check how we did it in server.cr: "#{token}.#{account_key.thumbprint}"
-          # We need access to account_key.
 
           key_auth = "#{token}.#{@account_key.not_nil!.thumbprint}"
 
@@ -81,18 +70,27 @@ module Acme
     end
 
     private def poll_auth_status(auth_url)
-      5.times do
+      loop do
         sleep 1.second
-        # In a real implementation we would check the auth status here.
-        # For now, we just wait a bit as we did in the example.
-        # To be robust, we should implement get_authorization in Client if needed,
-        # but for now the sleep is what we had.
+        auth = @client.get_authorization(auth_url)
+        status = auth["status"].as_s
+
+        case status
+        when "valid"
+          break
+        when "invalid"
+          raise "Authorization failed: #{auth}"
+        when "pending", "processing"
+          # Continue polling
+        else
+          raise "Unknown authorization status: #{status}"
+        end
       end
     end
 
-    private def poll_order_status(order_url)
+    private def poll_order_status(order_url, duration : Time::Span = 1.second)
       loop do
-        sleep 1.second
+        sleep duration
         order = @client.get_order(order_url)
         status = order["status"].as_s
 

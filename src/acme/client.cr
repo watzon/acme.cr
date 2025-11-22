@@ -144,6 +144,34 @@ module Acme
       JSON.parse(response.body)
     end
 
+    def get_authorization(auth_url : String)
+      if @development
+        domain = "example.com"
+        # Try to extract domain from URL if possible, otherwise default
+        if auth_url =~ /auth\/(.+)/
+          domain = $1
+        end
+
+        return JSON.parse({
+          "url"        => auth_url,
+          "identifier" => {"type" => "dns", "value" => domain},
+          "status"     => "valid", # Return valid immediately for dev mode polling
+          "challenges" => [
+            {"type" => "http-01", "url" => "dev://challenge/#{domain}", "token" => "dev-token", "status" => "valid"},
+          ],
+        }.to_json)
+      end
+
+      response = post(auth_url, nil) # POST-as-GET
+      raise "Failed to fetch authz" unless response.success?
+
+      auth = JSON.parse(response.body)
+      if auth.as_h?
+        auth.as_h["url"] = JSON::Any.new(auth_url)
+      end
+      auth
+    end
+
     def get_authorizations(order)
       if @development
         return order["data"].as(JSON::Any)["authorizations"].as_a.map do |auth_url|
