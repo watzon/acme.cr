@@ -23,14 +23,9 @@ lib LibCrypto
 
   # BIO
   # BIO_new is already defined in stdlib (as BIO_new).
-  # BIO_s_mem is missing.
   fun bio_s_mem = BIO_s_mem : BioMethod*
   fun bio_free_all = BIO_free_all(bio : Bio*)
 
-  # BIO_read, BIO_ctrl might be missing or named differently.
-  # Let's define them with aliases just in case, but check if they conflict.
-  # If they conflict, we'll get an error, but since we are reopening, we can't redefine.
-  # So we should use unique names if we are unsure.
   fun bio_read_ex = BIO_read(bio : Bio*, buf : UInt8*, len : Int32) : Int32
   fun bio_ctrl_ex = BIO_ctrl(bio : Bio*, cmd : Int32, larg : Int64, parg : Void*) : Int64
 
