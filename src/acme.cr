@@ -4,6 +4,7 @@ require "./acme/crypto/self_signed"
 require "./acme/challenge_store"
 require "./acme/client"
 require "./acme/handler"
+require "./acme/manager"
 
 module Acme
   VERSION = "0.1.0"

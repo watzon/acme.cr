@@ -149,6 +149,7 @@ module Acme
         return order["data"].as(JSON::Any)["authorizations"].as_a.map do |auth_url|
           domain = auth_url.as_s.split("/").last
           JSON.parse({
+            "url"        => auth_url.as_s,
             "identifier" => {"type" => "dns", "value" => domain},
             "status"     => "pending",
             "challenges" => [

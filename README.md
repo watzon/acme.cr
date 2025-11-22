@@ -14,11 +14,13 @@
 - [Background](#background)
 - [Install](#install)
 - [Usage](#usage)
-  - [Basic Certificate Request](#basic-certificate-request)
-  - [HTTP-01 Challenge Handling](#http-01-challenge-handling)
+  - [Usage](#usage)
+  - [Easy Mode (Recommended)](#easy-mode-recommended)
+  - [Advanced Usage](#advanced-usage)
   - [Development Mode](#development-mode)
-  - [Complete Example](#complete-example)
+  - [Examples](#examples)
 - [API Reference](#api-reference)
+  - [Acme::Manager](#acmemanager)
   - [Acme::Client](#acmeclient)
   - [Acme::Crypto::RSA](#acmecryptorsa)
   - [Acme::Crypto::CSR](#acmecryptocsr)
@@ -63,7 +65,35 @@ shards install
 
 ## Usage
 
-### Basic Certificate Request
+### Easy Mode (Recommended)
+
+The easiest way to use `acme.cr` is via the `Acme::Manager` class, which handles the entire flow for you.
+
+```crystal
+require "acme"
+
+# 1. Initialize Manager
+manager = Acme::Manager.new(
+  Acme::Client::LETS_ENCRYPT_STAGING, 
+  "admin@example.com", 
+  ["example.com"]
+)
+
+# 2. Add the handler to your HTTP server
+server = HTTP::Server.new([manager.handler])
+
+# 3. Obtain Certificate (blocks until done)
+cert_pem, key_pem = manager.obtain_certificate
+
+# 4. Use the certificate
+puts "Got certificate!"
+```
+
+### Advanced Usage
+
+For more control, you can use the low-level `Acme::Client` directly.
+
+#### Basic Certificate Request
 
 Here's a minimal example of requesting a certificate for a single domain:
 
@@ -98,7 +128,7 @@ client.finalize_order(order["data"]["finalize"].as_s, csr)
 cert_pem = client.get_certificate(order["data"]["certificate"].as_s)
 ```
 
-### HTTP-01 Challenge Handling
+#### HTTP-01 Challenge Handling
 
 To automatically solve HTTP-01 challenges, use the `Acme::Handler` in your HTTP stack:
 
@@ -153,7 +183,14 @@ client = Acme::Client.new(
 # Useful for unit tests and development.
 ```
 
-### Complete Example
+### Examples
+
+Check out the `examples/` directory for complete, runnable applications:
+
+- **[server-easy.cr](examples/server-easy.cr)**: Uses `Acme::Manager` (Recommended)
+- **[server-full.cr](examples/server-full.cr)**: Uses `Acme::Client` (Low-level)
+
+### Complete Example (Low-level)
 
 Here's a complete example showing the full certificate lifecycle:
 
@@ -235,6 +272,18 @@ manager.request_certificate("example.com")
 ```
 
 ## API Reference
+
+### Acme::Manager
+
+High-level manager for orchestrating certificate acquisition.
+
+```crystal
+manager = Acme::Manager.new(directory_url, email, domains)
+```
+
+**Methods:**
+- `handler` - Returns an `Acme::Handler` for serving challenges
+- `obtain_certificate` - Blocks until certificate is obtained, returns `{cert_pem, key_pem}`
 
 ### Acme::Client
 

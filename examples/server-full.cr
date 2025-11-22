@@ -100,22 +100,6 @@ begin
   csr = Acme::Crypto::CSR.new(domain_key, [domain])
   client.finalize_order(order["data"].as(JSON::Any)["finalize"].as_s, csr)
 
-  puts "Waiting for order to be valid..."
-  order_url = order["url"].as(String)
-  loop do
-    sleep 2.seconds
-    current_order = client.get_order(order_url)
-    status = current_order["status"].as_s
-    puts "Order status: #{status}"
-
-    if status == "valid"
-      order["data"] = current_order
-      break
-    elsif status == "invalid"
-      raise "Order became invalid: #{current_order}"
-    end
-  end
-
   puts "Downloading certificate..."
   cert_pem = client.get_certificate(order["data"].as(JSON::Any)["certificate"].as_s)
   key_pem = domain_key.to_pem
