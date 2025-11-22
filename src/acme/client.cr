@@ -163,7 +163,13 @@ module Acme
       auth_urls.map do |url|
         response = post(url, nil) # POST-as-GET
         raise "Failed to fetch authz" unless response.success?
-        JSON.parse(response.body)
+
+        # We need to inject the URL into the response so the manager can use it for polling
+        auth = JSON.parse(response.body)
+        if auth.as_h?
+          auth.as_h["url"] = JSON::Any.new(url)
+        end
+        auth
       end
     end
 
