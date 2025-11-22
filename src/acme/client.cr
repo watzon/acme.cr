@@ -7,7 +7,7 @@ require "./crypto/self_signed"
 module Acme
   class Client
     LETS_ENCRYPT_STAGING = "https://acme-staging-v02.api.letsencrypt.org/directory"
-    LETS_ENCRYPT_PROD = "https://acme-v02.api.letsencrypt.org/directory"
+    LETS_ENCRYPT_PROD    = "https://acme-v02.api.letsencrypt.org/directory"
 
     getter kid : String?
 
@@ -45,7 +45,7 @@ module Acme
       3.times do
         nonce = new_nonce
         jws_data = @jws.sign(payload ? payload.to_json : nil, url, nonce, @kid)
-        
+
         response = HTTP::Client.post(
           url,
           headers: HTTP::Headers{"Content-Type" => "application/jose+json"},
@@ -82,12 +82,12 @@ module Acme
 
       payload = {
         "termsOfServiceAgreed" => true,
-        "contact" => ["mailto:#{email}"]
+        "contact"              => ["mailto:#{email}"],
       }
-      
+
       url = directory["newAccount"].as_s
       response = post(url, payload)
-      
+
       if response.success? || response.status_code == 409 # 409 = already exists
         @kid = response.headers["Location"]
         return JSON.parse(response.body)
@@ -99,44 +99,62 @@ module Acme
     def new_order(domains : Array(String))
       if @development
         return {
-          "url" => "dev://order",
+          "url"  => "dev://order",
           "data" => JSON.parse({
-            "identifiers" => domains.map { |d| { "type" => "dns", "value" => d } },
+            "identifiers"    => domains.map { |d| {"type" => "dns", "value" => d} },
             "authorizations" => domains.map { |d| "dev://auth/#{d}" },
-            "finalize" => "dev://finalize?domains=#{domains.join(",")}"
-          }.to_json)
+            "finalize"       => "dev://finalize?domains=#{domains.join(",")}",
+          }.to_json),
         }
       end
 
       payload = {
-        "identifiers" => domains.map { |d| { "type" => "dns", "value" => d } }
+        "identifiers" => domains.map { |d| {"type" => "dns", "value" => d} },
       }
-      
+
       url = directory["newOrder"].as_s
       response = post(url, payload)
-      
+
       if response.success?
         order = JSON.parse(response.body)
         {
-          "url" => response.headers["Location"],
-          "data" => order
+          "url"  => response.headers["Location"],
+          "data" => order,
         }
       else
         raise "New Order failed: #{response.body}"
       end
     end
 
+    def get_order(order_url : String)
+      if @development
+        # In dev mode, we assume it's always valid for simplicity,
+        # or we could track state. For now, return a valid order with a dummy cert URL.
+        # We need to try to extract domains if possible, but for dev mode
+        # the cert URL generation in finalize_order is what matters.
+        # Here we just return a state that lets the client proceed.
+        return JSON.parse({
+          "status"      => "valid",
+          "certificate" => "dev://cert?domains=example.com",
+        }.to_json)
+      end
+
+      response = post(order_url, nil) # POST-as-GET
+      raise "Failed to get order" unless response.success?
+      JSON.parse(response.body)
+    end
+
     def get_authorizations(order)
       if @development
         return order["data"].as(JSON::Any)["authorizations"].as_a.map do |auth_url|
-           domain = auth_url.as_s.split("/").last
-           JSON.parse({
-             "identifier" => { "type" => "dns", "value" => domain },
-             "status" => "pending",
-             "challenges" => [
-               { "type" => "http-01", "url" => "dev://challenge/#{domain}", "token" => "dev-token" }
-             ]
-           }.to_json)
+          domain = auth_url.as_s.split("/").last
+          JSON.parse({
+            "identifier" => {"type" => "dns", "value" => domain},
+            "status"     => "pending",
+            "challenges" => [
+              {"type" => "http-01", "url" => "dev://challenge/#{domain}", "token" => "dev-token"},
+            ],
+          }.to_json)
         end
       end
 
@@ -160,19 +178,19 @@ module Acme
           domains = $1
           # Return a dummy response that points to a certificate URL containing the domains
           return HTTP::Client::Response.new(200, {
-            "certificate" => "dev://cert?domains=#{domains}"
+            "certificate" => "dev://cert?domains=#{domains}",
           }.to_json)
         end
       end
 
       der = csr.to_der
       payload = {
-        "csr" => Base64.urlsafe_encode(der, padding: false)
+        "csr" => Base64.urlsafe_encode(der, padding: false),
       }
-      
+
       post(finalize_url, payload)
     end
-    
+
     def get_certificate(cert_url : String)
       if @development
         if cert_url =~ /domains=(.+)/
