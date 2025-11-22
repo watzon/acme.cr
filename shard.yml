@@ -1,0 +1,13 @@
+name: acme
+version: 0.1.0
+
+authors:
+  - opencode <opencode@example.com>
+
+targets:
+  acme:
+    main: src/acme.cr
+
+dependencies:
+  openssl:
+    github: crystal-lang/crystal-openssl
