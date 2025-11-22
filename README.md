@@ -401,12 +401,6 @@ Run the test suite:
 crystal spec
 ```
 
-To run performance benchmarks:
-
-```bash
-GESSO_PERFORMANCE_TESTS=true crystal spec
-```
-
 ### Code Style
 
 - Follow Crystal's official style guide
